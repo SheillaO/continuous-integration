@@ -54,4 +54,3 @@ jobs:
                   tags: |
                       ${{ vars.DOCKERHUB_USERNAME }}/cicd:latest
                       ${{ vars.DOCKERHUB_USERNAME }}/cicd:${{ github.sha }}
-
