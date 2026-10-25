@@ -1,21 +1,22 @@
-# Use the smallest official Node.js runtime image based on Alpine Linux
-FROM node:24-alpine
-
-# Set the working directory inside the container
+# --- Stage 1: Base Environment ---
+FROM node:24-alpine AS base
 WORKDIR /app
-
-# Copy dependency manifests first to leverage Docker's layer caching
 COPY package*.json ./
 
-# Install dependencies securely (only production packages to keep it tiny)
-RUN npm ci --only=production
-
-# Copy the rest of your application code
+# --- Stage 2: Development & Testing ---
+FROM base AS tester
+# Install ALL dependencies (including devDependencies like ESLint/Jest)
+RUN npm install 
 COPY . .
+# Force Docker to run your checks. If these fail, the build stops!
+RUN npm run lint
+RUN npm test
 
-# Inform Docker that the container listens on port 3000 at runtime
+# --- Stage 3: Clean Production Image ---
+FROM base AS runner
+# Install ONLY production dependencies to keep the image tiny (~50MB)
+RUN npm ci --only=production
+# Copy only the clean app code from the tester stage
+COPY --from=tester /app . 
 EXPOSE 3000
-
-# Run the server
 CMD ["node", "server.js"]
-
